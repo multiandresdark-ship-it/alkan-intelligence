@@ -9,7 +9,7 @@
 - Migraciones de casos, permisos y recepcion de señales aplicadas.
 - Publicada: https://randall-console.vercel.app/ . Vercel confirma el despliegue de produccion listo.
 - Se verificaron el acceso publico, el inicio de sesion de una cuenta operativa ya asignada y la navegacion del espacio real.
-- El espacio verificado estaba vacio: faltan clientes reales y una ejecucion real del motor.
+- Apify conectado: se importaron 22 permisos reales como evidencia sin verificar; repetir la importacion no crea duplicados. La fecha original de esos registros es el 3 de septiembre de 2026. Aun faltan contactos confirmados y un piloto de calificacion.
 
 ## Publicar en Vercel
 Importar el repositorio existente en el equipo de Vercel del propietario. Configurar:
@@ -32,6 +32,8 @@ Iniciar sesion en la consola y confirmar que solo aparecen sus registros.
 La cuenta operativa proporcionada ya estaba confirmada y asignada; se verifico su entrada a la consola. Si Randall usara una cuenta distinta, falta acordar su correo y espacio. La consola no crea usuarios ni envia invitaciones por su cuenta.
 
 ## Conectar el motor
+La entrada desde Apify ya funciona en **Actor Connections**: seleccionar actor, ejecucion completada, vista previa e importar la pagina. El secreto existente `alkan leads` se consume solo en el servidor. Consultar [APIFY_CONNECTION.md](APIFY_CONNECTION.md) para configuracion y limites. No hace falta otra clave para importar ejecuciones existentes; esta version no inicia ni programa corridas.
+
 El codigo de GitHub debe ejecutarse en un servidor o entorno de trabajo del motor. Publicar la consola en Vercel no inicia los recolectores.
 
 1. Seleccionar un lead real ya existente y su cliente.

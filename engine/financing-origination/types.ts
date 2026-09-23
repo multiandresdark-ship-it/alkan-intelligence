@@ -56,6 +56,7 @@ export type PartnerBox = {
   min_requested_amount?: number | null;
   max_requested_amount?: number | null;
   notes?: string | null;
+  required_documents?: string[];
 };
 
 export type FinancingSignal = {

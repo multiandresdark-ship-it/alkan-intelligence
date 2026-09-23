@@ -11,7 +11,8 @@ const user={id:"00000000-0000-4000-8000-000000000002",email:"qa@example.invalid"
 const enc=x=>Buffer.from(JSON.stringify(x)).toString("base64url");
 const token=enc({alg:"HS256",typ:"JWT"})+"."+enc({sub:user.id,aud:"authenticated",role:"authenticated",exp:Math.floor(Date.now()/1000)+3600})+".qa";
 const session={access_token:token,refresh_token:"qa-only",expires_at:Math.floor(Date.now()/1000)+3600,expires_in:3600,token_type:"bearer",user};
-const lead={id,client_id:"qa-only",company:"QA fixture contractor",name:"QA Contact",phone:null,email:null,status:"new",permit_number:"QA-ONLY",jurisdiction:"seattle",created_at:"2026-09-01T00:00:00Z",updated_at:"2026-09-01T00:00:00Z",permit_data:{value:125000,source_url:"https://example.invalid/qa-permit"},enrichment_data:{city:"Seattle",trade:"Roofing",capital:{ruta:"TIER_S_FINANCIAMIENTO",need:70,fit:80,risk:10,confianza:"medium",motivo:"QA evidence only",ganchos:["QA fixture: permit activity"],valor_obra_12m:125000}}};
+const lead={id,client_id:"qa-only",company:"QA fixture contractor",name:"QA Contact",phone:null,email:null,status:"new",permit_number:"QA-ONLY",jurisdiction:"seattle",created_at:"2026-09-01T00:00:00Z",updated_at:"2026-09-01T00:00:00Z",permit_data:{value:125000,source_url:"https://example.invalid/qa-permit"},enrichment_data:{apify:{accela:{extracted:{owner_phone:"206-555-0101"},observed_at:"2026-09-01T00:00:00Z",document:"QA source"}},city:"Seattle",trade:"Roofing",capital:{ruta:"TIER_S_FINANCIAMIENTO",need:70,fit:80,risk:10,confianza:"medium",motivo:"QA evidence only",ganchos:["QA fixture: permit activity"],valor_obra_12m:125000}}};
+let box={client_id:"qa-only",partner_id:"randall",partner_name:"Randall",allowed_states:[],allowed_industries:[],required_documents:[],active:true};
 let saved=null, tick=0; const leadRows=[lead];
 await context.addInitScript(({session})=>localStorage.setItem("sb-qyesctuksvtblegkinrj-auth-token",JSON.stringify(session)),{session});
 await page.route("https://qyesctuksvtblegkinrj.supabase.co/**",async route=>{
@@ -19,6 +20,9 @@ await page.route("https://qyesctuksvtblegkinrj.supabase.co/**",async route=>{
  let body;
  if(url.pathname.includes("/auth/v1/user"))body=user;
  else if(url.pathname.includes("/rpc/get_my_client_id"))body="qa-only";
+ else if(url.pathname.endsWith("/financing_candidates")||url.pathname.endsWith("/financing_partner_feedback"))body=[];
+ else if(url.pathname.endsWith("/financing_partner_boxes")){if(method==="PATCH"){box={...box,...req.postDataJSON()};body=[{partner_id:"randall"}];}else body=box;}
+ else if(url.pathname.endsWith("/origination-bridge"))body={counts:{reviewed:1,evaluated:0,skipped:1,cases_created:0},reasons:{"Business-to-evidence match needs verification":1},next_offset:null};
  else if(url.pathname.endsWith("/leads")){
  if(method==="POST"){leadRows.push({...req.postDataJSON(),id:"00000000-0000-4000-8000-000000000009",created_at:new Date().toISOString(),enrichment_data:{},permit_data:{}});body=[];}
  else body=url.searchParams.has("company")?leadRows.filter(l=>l.company===url.searchParams.get("company").slice(3)):leadRows;
@@ -35,7 +39,18 @@ await page.route("https://qyesctuksvtblegkinrj.supabase.co/**",async route=>{
  }else throw new Error("Unexpected external request "+method+" "+url.pathname);
  await route.fulfill({status:200,contentType:"application/json",body:JSON.stringify(body)});
 });
-await page.goto("http://127.0.0.1:5187");
+await page.goto(process.env.QA_BASE_URL??"http://127.0.0.1:5187");
+await page.getByRole("button",{name:"Evaluate workspace",exact:true}).click();
+await expect(page.getByRole("status")).toContainText("skipped: 1");
+await page.getByText("Partner configuration & feedback",{exact:true}).click();
+await expect(page.getByLabel("Minimum years in business",{exact:true})).toHaveValue("");
+await page.getByLabel("Required documents (comma-separated)",{exact:true}).fill("QA document");
+await page.getByRole("button",{name:"Save partner settings",exact:true}).click();
+await expect(page.getByText("Partner settings saved.",{exact:true})).toBeVisible();
+await page.reload();
+await page.getByText("Partner configuration & feedback",{exact:true}).click();
+await expect(page.getByLabel("Required documents (comma-separated)",{exact:true})).toHaveValue("QA document");
+await page.getByText("Previous financing signals",{exact:true}).click();
 await expect(page.getByText("QA fixture contractor",{exact:true})).toBeVisible();
 await page.getByRole("button",{name:"Qualify",exact:true}).click();
 const dialog=page.getByRole("dialog");
@@ -77,6 +92,7 @@ await dialog.getByRole("button",{name:"Save qualification"}).click();
 await expect(dialog).not.toBeVisible();
 if(saved.funded_at!==firstFunded)throw new Error("Funded timestamp changed on edit");
 await page.getByRole("button",{name:/Funding Radar/}).click();
+await page.getByText("Previous financing signals",{exact:true}).click();
 await expect(page.getByText("No financing candidates match")).toBeVisible();
 await page.getByRole("button",{name:/Follow-up Desk/}).click();
 await page.getByRole("button",{name:/All scheduled/}).click();
@@ -87,10 +103,16 @@ await page.getByLabel("Contact name",{exact:true}).fill("QA Existing");
 await page.getByRole("button",{name:"Add to qualification queue",exact:true}).click();
 await expect(page.getByText("QA existing partner contact",{exact:true})).toBeVisible();
 if(leadRows[1].source!=="randall_existing_contact"||Object.keys(leadRows[1].enrichment_data).length)throw new Error("Intake fabricated source signals");
+await page.getByRole("button",{name:/Business Intelligence/}).click();
+await expect(page.getByText("Extracted phone: 206-555-0101 · unverified",{exact:true})).toBeVisible();
+await page.getByRole("button",{name:/QA fixture contractor/}).click();
+await expect(dialog.getByRole("link",{name:"206-555-0101",exact:true})).toHaveAttribute("href","tel:+12065550101");
+await expect(dialog.getByText("Role unconfirmed; may belong to another project participant",{exact:true})).toBeVisible();
+await dialog.getByRole("button",{name:"Close",exact:true}).click();
 await page.setViewportSize({width:390,height:844});
 await page.screenshot({path:"artifacts/qa-mobile.png",fullPage:true});
 const width=await page.evaluate(()=>({body:document.documentElement.scrollWidth,viewport:innerWidth}));
 if(width.body>width.viewport+1)throw new Error("Mobile overflow "+JSON.stringify(width));
 if(errors.length)throw new Error("Browser errors: "+errors.join("; "));
-console.log(JSON.stringify({passed:true,checks:["incomplete cases blocked","save and reopen","local follow-up roundtrip","funding evidence required","requested vs funded amounts","milestones stable","funded removed from radar","mobile no overflow","partner follow-up desk","existing partner intake without invented signals"],externalWrites:0}));
+console.log(JSON.stringify({passed:true,checks:["extracted phone with source and role warning","v3 evaluation with unresolved evidence","unknown partner criteria","partner settings refresh persistence","incomplete cases blocked","save and reopen","local follow-up roundtrip","funding evidence required","requested vs funded amounts","milestones stable","funded removed from radar","mobile no overflow","partner follow-up desk","existing partner intake without invented signals"],externalWrites:0}));
 await browser.close();

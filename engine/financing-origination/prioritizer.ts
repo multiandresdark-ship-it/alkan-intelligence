@@ -19,9 +19,9 @@ function freshnessFactor(signal: FinancingSignal, now: Date) {
   return Math.max(0.25, Math.min(1, remaining / life));
 }
 
-function evidenceScore(snapshot: ContractorSnapshot) {
+function evidenceScore(snapshot: ContractorSnapshot, now: Date) {
   const fresh = snapshot.evidence.filter((e) => {
-    const age = Date.now() - Date.parse(e.observed_at);
+    const age = now.getTime() - Date.parse(e.observed_at);
     return Number.isFinite(age) && age >= 0 && age <= 90 * 86_400_000;
   });
   const uniqueSources = new Set(fresh.map((e) => new URL(e.url).hostname)).size;
@@ -69,12 +69,12 @@ export function buildFinancingCandidate(
   partner: PartnerBox,
   now = new Date(),
 ): FinancingCandidate {
-  const signals = generateFinancingSignals(snapshot);
+  const signals = generateFinancingSignals(snapshot, now);
   const fit = evaluatePartnerFit(snapshot, partner);
 
   const activity = activityScore(signals, now);
   const timing = timingScore(signals, now);
-  const evidence = evidenceScore(snapshot);
+  const evidence = evidenceScore(snapshot, now);
   const contactability = contactabilityScore(snapshot);
 
   // Weighted exactly as the operating design:
@@ -93,12 +93,13 @@ export function buildFinancingCandidate(
     .slice(0, 3)
     .map((s) => s.detail);
 
-  const observed_at = activeSignals.length
-    ? activeSignals.map((s) => s.observed_at).sort().at(-1)!
-    : snapshot.evidence.map((e) => e.observed_at).sort().at(-1)!;
+  const datedSignals=activeSignals.length?activeSignals:signals;
+  const observed_at = datedSignals.length
+    ? datedSignals.map((s) => s.observed_at).sort().at(-1)!
+    : snapshot.evidence.map((e) => new Date(e.observed_at).toISOString()).sort()[0];
 
-  const expires_at = activeSignals.length
-    ? activeSignals.map((s) => s.expires_at).sort().at(0)!
+  const expires_at = datedSignals.length
+    ? datedSignals.map((s) => s.expires_at).sort().at(0)!
     : new Date(Date.parse(observed_at) + 14 * 86_400_000).toISOString();
 
   return {

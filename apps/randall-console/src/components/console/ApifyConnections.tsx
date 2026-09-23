@@ -34,6 +34,7 @@ export function ApifyConnections(){
  <label className="block text-sm" htmlFor="apify-run">Completed run</label>
  <select id="apify-run" className="w-full rounded-md border border-border bg-background p-3 text-sm" value={runId} onChange={e=>{setRunId(e.target.value);setPreview(null);setResult(null);setError("");}} disabled={busy}><option value="">Choose a run</option>{runs.data?.runs.map(r=><option key={r.id} value={r.id} disabled={r.status!=="SUCCEEDED"}>{new Date(r.started_at).toLocaleString()} · {r.status} · {r.id}</option>)}</select>
  {runs.data?.runs.length===0&&<p>No recent runs were found.</p>}
+ {runs.data&&runs.data.runs.length>0&&!runs.data.runs.some(r=>r.status==="SUCCEEDED")&&<p className="text-sm text-muted-foreground">No successful run is available. Review the failed runs in Apify before importing new results.</p>}
  <Button disabled={!runId||busy} onClick={()=>void inspect()}>Preview results</Button>
  </section>}
  {error&&<p role="alert" className="rounded-lg border border-destructive/30 p-4 text-sm text-destructive">{error}</p>}

@@ -11,7 +11,8 @@ function latestObservedAt(snapshot: ContractorSnapshot) {
     .map((s) => Date.parse(s.observed_at))
     .filter(Number.isFinite);
   if (!timestamps.length) throw new Error("At least one evidence timestamp is required.");
-  return new Date(Math.max(...timestamps)).toISOString();
+  // A newer identity lookup must not refresh older activity in a bundled snapshot.
+  return new Date(Math.min(...timestamps)).toISOString();
 }
 
 function sources(snapshot: ContractorSnapshot) {
@@ -40,7 +41,7 @@ function makeSignal(
   };
 }
 
-export function generateFinancingSignals(snapshot: ContractorSnapshot): FinancingSignal[] {
+export function generateFinancingSignals(snapshot: ContractorSnapshot, now = new Date()): FinancingSignal[] {
   if (!snapshot.lead_id || !snapshot.client_id || !snapshot.company_name?.trim()) {
     throw new Error("lead_id, client_id and company_name are required.");
   }
@@ -49,6 +50,16 @@ export function generateFinancingSignals(snapshot: ContractorSnapshot): Financin
   }
 
   const signals: FinancingSignal[] = [];
+
+  for (const source of snapshot.evidence) {
+    const url = new URL(source.url);
+    const observed = Date.parse(source.observed_at);
+    if (!["https:","http:"].includes(url.protocol) || url.username || url.password || !Number.isFinite(observed) || observed > now.getTime() + 300000) throw new Error("Evidence needs a public URL and a valid observation date.");
+  }
+  for (const key of ["years_in_business","permits_30d","permits_90d","permits_12m","concurrent_projects","observed_work_value_12m","recent_award_value","public_contracts_12m","project_starts_30d","project_starts_60d","bond_renewal_days"] as const) {
+    const value=snapshot[key];
+    if(value!=null&&(typeof value!=="number"||!Number.isFinite(value)||value<0))throw new Error("Invalid numeric activity field: "+key);
+  }
 
   const permits30 = snapshot.permits_30d ?? 0;
   const permits90 = snapshot.permits_90d ?? 0;

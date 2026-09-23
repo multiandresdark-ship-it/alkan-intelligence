@@ -11,11 +11,16 @@ CREATE TABLE IF NOT EXISTS public.financing_partner_boxes (
   max_requested_amount numeric,
   allowed_states text[] NOT NULL DEFAULT '{}',
   allowed_industries text[] NOT NULL DEFAULT '{}',
+  required_documents text[] NOT NULL DEFAULT '{}',
   notes text,
   active boolean NOT NULL DEFAULT true,
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now(),
   PRIMARY KEY (client_id, partner_id)
+  ,CHECK(min_years_in_business IS NULL OR min_years_in_business>=0)
+  ,CHECK(min_requested_amount IS NULL OR min_requested_amount>=0)
+  ,CHECK(max_requested_amount IS NULL OR max_requested_amount>0)
+  ,CHECK(min_requested_amount IS NULL OR max_requested_amount IS NULL OR min_requested_amount<=max_requested_amount)
 );
 
 CREATE TABLE IF NOT EXISTS public.financing_candidates (
@@ -82,7 +87,7 @@ REVOKE ALL ON public.financing_candidates FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON public.financing_partner_feedback FROM PUBLIC, anon, authenticated;
 
 GRANT SELECT, INSERT, UPDATE ON public.financing_partner_boxes TO authenticated;
-GRANT SELECT, INSERT, UPDATE ON public.financing_candidates TO authenticated;
+GRANT SELECT ON public.financing_candidates TO authenticated;
 GRANT SELECT, INSERT ON public.financing_partner_feedback TO authenticated;
 
 GRANT ALL ON public.financing_partner_boxes TO service_role;
@@ -131,7 +136,7 @@ USING (client_id=(select public.get_my_client_id()));
 DROP POLICY IF EXISTS financing_partner_feedback_insert_client ON public.financing_partner_feedback;
 CREATE POLICY financing_partner_feedback_insert_client ON public.financing_partner_feedback
 FOR INSERT TO authenticated
-WITH CHECK (client_id=(select public.get_my_client_id()));
+WITH CHECK (client_id=(select public.get_my_client_id()) AND EXISTS (SELECT 1 FROM public.financing_cases c WHERE c.id=case_id AND c.client_id=financing_partner_feedback.client_id) AND EXISTS (SELECT 1 FROM public.financing_partner_boxes b WHERE b.client_id=financing_partner_feedback.client_id AND b.partner_id=financing_partner_feedback.partner_id));
 
 CREATE OR REPLACE FUNCTION public.ingest_financing_candidate(p_candidate jsonb)
 RETURNS jsonb
@@ -149,10 +154,22 @@ DECLARE
   v_candidate_id uuid;
   v_case_id uuid;
   v_case_created boolean := false;
+  v_existing public.financing_candidates;
 BEGIN
   IF jsonb_typeof(p_candidate) IS DISTINCT FROM 'object' THEN
     RAISE EXCEPTION 'Candidate must be an object';
   END IF;
+
+  IF octet_length(p_candidate::text)>100000 OR EXISTS(SELECT 1 FROM jsonb_object_keys(p_candidate) k WHERE k NOT IN ('client_id','lead_id','partner_id','company_name','activity_score','timing_score','partner_fit_score','evidence_score','contactability_score','priority_score','reasons','signals','unknowns','verification_flags','observed_at','expires_at','next_action')) THEN
+    RAISE EXCEPTION 'Unsupported candidate fields or oversized payload';
+  END IF;
+  IF jsonb_typeof(p_candidate->'signals') IS DISTINCT FROM 'array'
+     OR jsonb_typeof(p_candidate->'reasons') IS DISTINCT FROM 'array'
+     OR jsonb_typeof(p_candidate->'unknowns') IS DISTINCT FROM 'array'
+     OR jsonb_typeof(p_candidate->'verification_flags') IS DISTINCT FROM 'array' THEN
+    RAISE EXCEPTION 'Candidate evidence must use arrays';
+  END IF;
+  IF jsonb_array_length(p_candidate->'reasons')>3 OR jsonb_array_length(p_candidate->'signals')>30 THEN RAISE EXCEPTION 'Candidate arrays exceed limits'; END IF;
 
   v_client = nullif(trim(p_candidate->>'client_id'),'');
   v_partner = nullif(trim(p_candidate->>'partner_id'),'');
@@ -161,9 +178,15 @@ BEGIN
   v_observed = (p_candidate->>'observed_at')::timestamptz;
   v_expires = (p_candidate->>'expires_at')::timestamptz;
 
-  IF v_client IS NULL OR v_partner IS NULL OR v_priority < 0 OR v_priority > 100 THEN
+  IF v_client IS NULL OR v_partner IS NULL OR v_priority IS NULL OR v_priority < 0 OR v_priority > 100 THEN
     RAISE EXCEPTION 'Invalid candidate identity or priority';
   END IF;
+  IF v_observed IS NULL OR v_expires IS NULL OR NOT isfinite(v_observed) OR NOT isfinite(v_expires) OR v_expires<=v_observed OR v_observed>now()+interval '5 minutes' THEN
+    RAISE EXCEPTION 'Invalid candidate dates';
+  END IF;
+  PERFORM pg_advisory_xact_lock(hashtextextended(v_client||':'||v_lead::text||':'||v_partner,0));
+  SELECT * INTO v_existing FROM public.financing_candidates WHERE client_id=v_client AND lead_id=v_lead AND partner_id=v_partner FOR UPDATE;
+  IF FOUND AND v_existing.observed_at>v_observed THEN RETURN jsonb_build_object('status','stale','candidate_id',v_existing.id,'financing_case','not_created'); END IF;
 
   IF NOT EXISTS(
     SELECT 1 FROM public.leads
@@ -231,7 +254,8 @@ BEGIN
   RETURNING id INTO v_candidate_id;
 
   -- Deterministic outreach threshold only. This is NOT underwriting.
-  IF v_priority >= 75 AND v_expires > now() THEN
+  IF v_priority >= 75 AND v_expires > now() AND jsonb_array_length(p_candidate->'signals')>0 AND jsonb_array_length(p_candidate->'verification_flags')=0
+     AND EXISTS(SELECT 1 FROM public.financing_candidates WHERE id=v_candidate_id AND status<>'dismissed') THEN
     INSERT INTO public.financing_cases(
       client_id,lead_id,partner_name,stage,next_action,source,source_candidate_id,auto_created_at
     )
@@ -258,6 +282,7 @@ BEGIN
       SELECT id INTO v_case_id
       FROM public.financing_cases
       WHERE client_id=v_client AND lead_id=v_lead;
+      UPDATE public.financing_candidates SET status='queued' WHERE id=v_candidate_id AND status<>'dismissed' AND v_case_id IS NOT NULL;
     END IF;
   END IF;
 
@@ -280,3 +305,47 @@ GRANT EXECUTE ON FUNCTION public.ingest_financing_candidate(jsonb) TO service_ro
 
 COMMENT ON FUNCTION public.ingest_financing_candidate(jsonb) IS
 'Evidence-first origination ingestion. High outreach priority can create an empty qualification case; it never populates confirmed borrower facts.';
+
+-- Scores are server-produced. Remove unused browser write policies.
+DROP POLICY IF EXISTS financing_candidates_insert_client ON public.financing_candidates;
+DROP POLICY IF EXISTS financing_candidates_update_client ON public.financing_candidates;
+DROP POLICY IF EXISTS financing_partner_feedback_insert_client ON public.financing_partner_feedback;
+CREATE POLICY financing_partner_feedback_insert_client ON public.financing_partner_feedback
+FOR INSERT TO authenticated WITH CHECK (
+ client_id=(select public.get_my_client_id())
+ AND EXISTS(SELECT 1 FROM public.financing_partner_boxes b WHERE b.client_id=financing_partner_feedback.client_id AND b.partner_id=financing_partner_feedback.partner_id)
+ AND EXISTS(SELECT 1 FROM public.financing_cases c WHERE c.id=case_id AND c.client_id=financing_partner_feedback.client_id
+  AND (decision='reviewed' OR decision=c.stage OR decision='declined' AND c.stage='not_fit'))
+);
+CREATE INDEX financing_partner_feedback_client_idx ON public.financing_partner_feedback(client_id,partner_id,decided_at DESC);
+CREATE INDEX financing_candidates_lead_idx ON public.financing_candidates(lead_id);
+CREATE INDEX financing_cases_candidate_idx ON public.financing_cases(source_candidate_id);
+
+CREATE OR REPLACE FUNCTION private.validate_case_candidate() RETURNS trigger LANGUAGE plpgsql SECURITY INVOKER SET search_path='' AS $$
+BEGIN
+ IF NEW.source_candidate_id IS NOT NULL AND NOT EXISTS(SELECT 1 FROM public.financing_candidates c WHERE c.id=NEW.source_candidate_id AND c.client_id=NEW.client_id AND c.lead_id=NEW.lead_id) THEN RAISE EXCEPTION 'Candidate belongs to another case or workspace'; END IF;
+ RETURN NEW;
+END; $$;
+REVOKE ALL ON FUNCTION private.validate_case_candidate() FROM PUBLIC,anon,authenticated;
+CREATE TRIGGER validate_case_candidate BEFORE INSERT OR UPDATE ON public.financing_cases FOR EACH ROW EXECUTE FUNCTION private.validate_case_candidate();
+
+CREATE OR REPLACE FUNCTION private.capture_partner_outcome() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
+DECLARE p text; outcome text; sigs text[];
+BEGIN
+ IF TG_OP='UPDATE' AND NEW.stage IS NOT DISTINCT FROM OLD.stage THEN RETURN NEW; END IF;
+ outcome=CASE WHEN NEW.stage='not_fit' THEN 'declined' WHEN NEW.stage IN ('submitted','approved','funded') THEN NEW.stage ELSE NULL END;
+ IF outcome IS NULL THEN RETURN NEW; END IF;
+ SELECT partner_id,ARRAY(SELECT DISTINCT x->>'signal_type' FROM jsonb_array_elements(c.signals) x WHERE x->>'signal_type' IS NOT NULL) INTO p,sigs
+ FROM public.financing_candidates c WHERE c.id=NEW.source_candidate_id AND c.client_id=NEW.client_id AND c.lead_id=NEW.lead_id;
+ IF p IS NULL THEN
+  SELECT min(partner_id) INTO p FROM public.financing_partner_boxes WHERE client_id=NEW.client_id AND partner_name=NEW.partner_name HAVING count(*)=1;
+ END IF;
+ IF p IS NOT NULL THEN
+  INSERT INTO public.financing_partner_feedback(client_id,case_id,partner_id,decision,partner_comment,candidate_signal_types,decided_at)
+  VALUES(NEW.client_id,NEW.id,p,outcome,NEW.partner_notes,coalesce(sigs,'{}'::text[]),NEW.updated_at)
+  ON CONFLICT(case_id,decision,decided_at) DO NOTHING;
+ END IF;
+ RETURN NEW;
+END; $$;
+REVOKE ALL ON FUNCTION private.capture_partner_outcome() FROM PUBLIC,anon,authenticated;
+CREATE TRIGGER capture_partner_outcome AFTER INSERT OR UPDATE ON public.financing_cases FOR EACH ROW EXECUTE FUNCTION private.capture_partner_outcome();

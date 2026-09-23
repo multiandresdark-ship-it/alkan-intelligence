@@ -64,7 +64,8 @@ export function evaluatePartnerFit(snapshot: ContractorSnapshot, box: PartnerBox
   if (box.min_requested_amount != null || box.max_requested_amount != null) {
     unknowns.push("Confirm requested financing amount on the call");
   }
-  unknowns.push("Confirm monthly deposits", "Confirm current debt / advances", "Confirm bankruptcy / NSF answers");
+  unknowns.push("Confirm actual financing requirement", "Confirm requested financing amount", "Confirm monthly deposits", "Confirm current debt / advances", "Confirm bankruptcy / NSF answers");
+  for(const document of box.required_documents??[])unknowns.push("Confirm document readiness: "+document);
 
   return {
     score: clamp(score),

@@ -13,8 +13,10 @@ export type SignalOutcomeSummary = {
 export function summarizeFeedback(feedback: PartnerFeedback[]): SignalOutcomeSummary[] {
   const rows = new Map<SignalType, Omit<SignalOutcomeSummary, "signal_type" | "funded_rate_after_review">>();
 
-  for (const item of feedback) {
-    for (const signal of item.candidate_signal_types ?? []) {
+  const latest=new Map<string,PartnerFeedback>();
+  for(const item of feedback){const key=item.partner_id+":"+item.case_id;const prior=latest.get(key);if(!prior||Date.parse(item.decided_at)>=Date.parse(prior.decided_at))latest.set(key,item);}
+  for (const item of latest.values()) {
+    for (const signal of new Set(item.candidate_signal_types ?? [])) {
       const row = rows.get(signal) ?? { reviewed: 0, submitted: 0, approved: 0, funded: 0, declined: 0 };
       row.reviewed += 1;
       if (item.decision === "submitted") row.submitted += 1;

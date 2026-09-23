@@ -7,7 +7,9 @@
 - Instalacion limpia, compilacion y 13 pruebas unitarias correctas.
 - Diez comprobaciones de navegador con datos simulados; no equivalen a un piloto real.
 - Migraciones de casos, permisos y recepcion de señales aplicadas.
-- Publicacion web pendiente de completar el inicio de sesion en Vercel.
+- Publicada: https://randall-console.vercel.app/ . Vercel confirma el despliegue de produccion listo.
+- Se verificaron el acceso publico, el inicio de sesion de una cuenta operativa ya asignada y la navegacion del espacio real.
+- El espacio verificado estaba vacio: faltan clientes reales y una ejecucion real del motor.
 
 ## Publicar en Vercel
 Importar el repositorio existente en el equipo de Vercel del propietario. Configurar:
@@ -27,7 +29,7 @@ Despues de publicar, abrir la URL sin una sesion de Vercel y comprobar que apare
 Usar la cuenta acordada de Supabase Auth y asociarla a su espacio cliente mediante `client_profiles`, siguiendo el modelo existente de alkanhunter. No adivinar el cliente ni conceder acceso a todos los espacios.
 Iniciar sesion en la consola y confirmar que solo aparecen sus registros.
 
-Hace falta acordar el correo que usara Randall y el espacio cliente correcto. La consola no crea usuarios ni envia invitaciones por su cuenta.
+La cuenta operativa proporcionada ya estaba confirmada y asignada; se verifico su entrada a la consola. Si Randall usara una cuenta distinta, falta acordar su correo y espacio. La consola no crea usuarios ni envia invitaciones por su cuenta.
 
 ## Conectar el motor
 El codigo de GitHub debe ejecutarse en un servidor o entorno de trabajo del motor. Publicar la consola en Vercel no inicia los recolectores.

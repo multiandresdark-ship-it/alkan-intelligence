@@ -28,6 +28,12 @@ No Gemini or OpenAI key is needed to import already completed runs. Repairing or
 
 ## Verification
 
+Live production verification on September 23, 2026 UTC: the assigned operator imported Accela run `hfcK46LqzbH90dgDb`. The first import inserted 22 distinct permits and skipped one summary row. Repeating it inserted zero and reported 22 already imported. Database checks found zero promoted contacts, zero financing scores and zero financing cases. Observations retained their original September 3 timestamps.
+
+The same connection returned two failed SERP runs and no available Digital Profile runs. Actor assignment and an accepted API request do not establish healthy collection or usable output. The next operational work is to repair SERP, verify availability of digital-profile outputs, and replace or repair legacy Accela extraction before collecting a new batch.
+
+Run `supabase/APIFY_INGEST_TEST.sql` with an administrator SQL connection to reproduce rolled-back integration assertions. No test data remains after the transaction.
+
 ```sh
 node --test supabase/functions/apify-bridge/normalize.test.ts
 cd apps/randall-console

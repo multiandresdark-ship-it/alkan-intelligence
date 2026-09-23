@@ -9,6 +9,7 @@ The repository was empty when this integration was prepared. This does not claim
 - `docs/MOTOR_CONTRACT.md`: input contract and scoring/ingestion commands.
 - `engine/financing_bridge.py`: validates motor events; dry-run by default, explicit `--apply` to ingest.
 - `supabase`: reviewed SQL for alkanhunter. Qualification facts stay separate from public signals.
+- `supabase/functions/apify-bridge`: authenticated actor-run previews and idempotent source imports. See [Apify connection](docs/APIFY_CONNECTION.md).
 - `docs/INTEGRATION_STATUS.md`: verified state and the remaining operational setup.
 
 ## Console

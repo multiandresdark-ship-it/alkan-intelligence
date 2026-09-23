@@ -10,6 +10,7 @@ import { ConsoleProvider, useConsole } from "@/components/console/console-contex
 import { AppSidebar } from "@/components/console/AppSidebar";
 import { Topbar } from "@/components/console/Topbar";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
+const ApifyConnections = React.lazy(() => import("@/components/console/ApifyConnections").then(m=>({default:m.ApifyConnections})));
 const FundingRadarPanel = React.lazy(() => import("@/components/console/FinancingWorkspace").then(m => ({default:m.FundingRadarPanel})));
 const QualificationQueuePanel = React.lazy(() => import("@/components/console/FinancingWorkspace").then(m => ({default:m.QualificationQueuePanel})));
 const DealPipelinePanel = React.lazy(() => import("@/components/console/FinancingWorkspace").then(m => ({default:m.DealPipelinePanel})));
@@ -76,6 +77,7 @@ function Workspace(){
  return <SidebarProvider><div className="flex min-h-screen w-full"><AppSidebar/><SidebarInset className="min-w-0 bg-background"><Topbar/><main className="min-w-0 p-4 md:p-7"><div className="mb-4 sm:hidden"><Input aria-label="Search workspace" placeholder="Search businesses…" value={search} onChange={e=>setSearch(e.target.value)}/></div>{client.data && <div className="mb-5 flex justify-end"><PartnerIntake/></div>}<SectionErrorBoundary key={section}>
  {client.isPending?<p role="status">Checking workspace access…</p>:client.isError?<ErrorBanner error={client.error} onRetry={()=>void client.refetch()}/>:!client.data?<EmptyState icon={ShieldCheck} title="Workspace access is not assigned" description="Your account is signed in, but an ALKAN administrator must assign your client workspace before records are available."/>:<>
  {leads.isError&&section!=="funding_radar"&&<ErrorBanner error={leads.error} onRetry={()=>void leads.refetch()}/>}
+ {section==="apify"&&<ApifyConnections/>}
  {section==="follow_up"&&<FollowUpDesk/>}
  {section==="funding_radar"&&<FundingRadarPanel leads={leads.data??[]} isLoading={leads.isPending} isError={leads.isError} error={leads.error} onRetry={()=>void leads.refetch()} onOpenProfile={openEvidence}/>}
  {section==="qualification"&&(leads.isPending?<p role="status">Loading qualification queue…</p>:<QualificationQueuePanel leads={leads.data??[]}/>)}

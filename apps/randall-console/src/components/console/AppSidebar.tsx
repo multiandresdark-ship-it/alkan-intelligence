@@ -77,6 +77,7 @@ const PARTNER_NAV: NavItem[] = [
 ];
 
 const ADVANCED_NAV: NavItem[] = [
+  {id:"apify",label:"Actor Connections",detail:"Apify · review · import",code:"A0",icon:Workflow},
   {
     id: "project_intelligence",
     label: "Project / Owner Evidence",

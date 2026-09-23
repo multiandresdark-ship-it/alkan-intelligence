@@ -1,6 +1,7 @@
 import { createContext, useContext, useMemo, useState, type ReactNode } from "react";
 
 export type ConsoleSection =
+  | "apify"
   | "follow_up"
   | "funding_radar"
   | "qualification"
@@ -41,6 +42,7 @@ export function useConsole() {
 }
 
 export const SECTION_META: Record<ConsoleSection, { title: string; subtitle: string }> = {
+  apify: {title:"Actor Connections",subtitle:"Apify runs, source evidence and import history."},
   follow_up: {title:"Follow-up Desk",subtitle:"Existing partner contacts, callbacks and relationship continuity."},
   funding_radar: {
     title: "Funding Radar",

@@ -13,6 +13,10 @@ The repository was empty when this integration was prepared. This does not claim
 
 ## Console
 
+Live console: https://randall-console.vercel.app/
+
+Production login and an existing assigned operator session were verified on 2026-09-23 UTC. See [puesta en marcha](docs/PUESTA_EN_MARCHA.md) for the remaining data and motor setup.
+
 Node 24 recommended.
 
 ```sh

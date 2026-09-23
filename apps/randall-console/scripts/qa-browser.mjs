@@ -1,0 +1,96 @@
+import { chromium } from "@playwright/test";
+import { expect } from "@playwright/test";
+import fs from "node:fs";
+fs.mkdirSync("artifacts",{recursive:true});
+const browser=await chromium.launch({channel:"chrome",headless:true});
+const context=await browser.newContext({viewport:{width:1440,height:1000}});
+const page=await context.newPage();
+const errors=[];page.on("pageerror",e=>errors.push(e.message));
+const id="00000000-0000-4000-8000-000000000001";
+const user={id:"00000000-0000-4000-8000-000000000002",email:"qa@example.invalid",aud:"authenticated",role:"authenticated",app_metadata:{},user_metadata:{},created_at:new Date().toISOString()};
+const enc=x=>Buffer.from(JSON.stringify(x)).toString("base64url");
+const token=enc({alg:"HS256",typ:"JWT"})+"."+enc({sub:user.id,aud:"authenticated",role:"authenticated",exp:Math.floor(Date.now()/1000)+3600})+".qa";
+const session={access_token:token,refresh_token:"qa-only",expires_at:Math.floor(Date.now()/1000)+3600,expires_in:3600,token_type:"bearer",user};
+const lead={id,client_id:"qa-only",company:"QA fixture contractor",name:"QA Contact",phone:null,email:null,status:"new",permit_number:"QA-ONLY",jurisdiction:"seattle",created_at:"2026-09-01T00:00:00Z",updated_at:"2026-09-01T00:00:00Z",permit_data:{value:125000,source_url:"https://example.invalid/qa-permit"},enrichment_data:{city:"Seattle",trade:"Roofing",capital:{ruta:"TIER_S_FINANCIAMIENTO",need:70,fit:80,risk:10,confianza:"medium",motivo:"QA evidence only",ganchos:["QA fixture: permit activity"],valor_obra_12m:125000}}};
+let saved=null, tick=0; const leadRows=[lead];
+await context.addInitScript(({session})=>localStorage.setItem("sb-qyesctuksvtblegkinrj-auth-token",JSON.stringify(session)),{session});
+await page.route("https://qyesctuksvtblegkinrj.supabase.co/**",async route=>{
+ const req=route.request(),url=new URL(req.url()),method=req.method();
+ let body;
+ if(url.pathname.includes("/auth/v1/user"))body=user;
+ else if(url.pathname.includes("/rpc/get_my_client_id"))body="qa-only";
+ else if(url.pathname.endsWith("/leads")){
+ if(method==="POST"){leadRows.push({...req.postDataJSON(),id:"00000000-0000-4000-8000-000000000009",created_at:new Date().toISOString(),enrichment_data:{},permit_data:{}});body=[];}
+ else body=url.searchParams.has("company")?leadRows.filter(l=>l.company===url.searchParams.get("company").slice(3)):leadRows;
+ }
+ else if(url.pathname.endsWith("/financing_cases")){
+  if(method==="POST"||method==="PATCH"){
+   const incoming=req.postDataJSON();
+   const now=new Date(Date.UTC(2026,8,22,12,0,++tick)).toISOString();
+   saved={...saved,...incoming,id:"00000000-0000-4000-8000-000000000003",created_at:saved?.created_at??now,updated_at:now,leads:lead};
+   if(incoming.stage==="funded")saved.funded_at??=now;
+   if(incoming.stage==="approved")saved.approved_at??=now;
+   body=saved;
+  }else body=url.searchParams.has("lead_id")?saved:(saved?[saved]:[]);
+ }else throw new Error("Unexpected external request "+method+" "+url.pathname);
+ await route.fulfill({status:200,contentType:"application/json",body:JSON.stringify(body)});
+});
+await page.goto("http://127.0.0.1:5187");
+await expect(page.getByText("QA fixture contractor",{exact:true})).toBeVisible();
+await page.getByRole("button",{name:"Qualify",exact:true}).click();
+const dialog=page.getByRole("dialog");
+await expect(dialog).toBeVisible();
+await dialog.getByRole("group",{name:"Pipeline stage",exact:true}).getByRole("combobox").click();
+await page.getByRole("option",{name:"Ready for partner review",exact:true}).click();
+await dialog.getByRole("button",{name:"Save qualification"}).click();
+await expect(dialog.getByRole("alert")).toContainText("Complete qualification");
+if(saved!==null)throw new Error("Incomplete case reached persistence");
+for(const [label,value] of [["Amount requested","40000"],["Use of funds","Materials"],["Monthly deposits","95000"],["Current debt / advances","None"],["Funding urgency","Next month"],["Bankruptcy status","No"],["NSF history","None"],["Receivables / active contracts","Signed contract confirmed"],["Next action","Review with partner"]]){
+ await dialog.getByLabel(label,{exact:true}).fill(value);
+}
+await dialog.getByRole("group",{name:"Documents ready",exact:true}).getByRole("combobox").click();
+await page.getByRole("option",{name:"Yes",exact:true}).click();
+await dialog.getByLabel("Follow-up",{exact:true}).fill("2026-10-15T14:30");
+await dialog.getByRole("button",{name:"Save qualification"}).click();
+await expect(dialog).not.toBeVisible();
+await page.getByRole("button",{name:/Deal Pipeline/}).click();
+await expect(page.getByRole("heading",{name:"Every conversation has a next step."})).toBeVisible();
+await page.getByRole("button",{name:/QA fixture contractor/}).click();
+await expect(dialog.getByLabel("Follow-up",{exact:true})).toHaveValue("2026-10-15T14:30");
+await dialog.getByRole("group",{name:"Pipeline stage",exact:true}).getByRole("combobox").click();
+await page.getByRole("option",{name:"Funded",exact:true}).click();
+await dialog.getByRole("button",{name:"Save qualification"}).click();
+await expect(dialog.getByRole("alert")).toContainText("actual funded amount");
+await dialog.getByLabel("Funded amount",{exact:true}).fill("38000");
+await dialog.getByLabel("Partner notes / decision reference",{exact:true}).fill("QA ONLY: partner confirmation reference");
+await dialog.getByRole("button",{name:"Save qualification"}).click();
+await expect(dialog).not.toBeVisible();
+await page.getByRole("button",{name:/Portfolio/}).click();
+await expect(page.getByRole("heading",{name:"Relationships worth returning to."})).toBeVisible();
+await expect(page.getByRole("cell",{name:"$40,000",exact:true})).toBeVisible();
+await expect(page.getByRole("cell",{name:"$38,000",exact:true})).toBeVisible();
+await page.screenshot({path:"artifacts/qa-portfolio.png",fullPage:true});
+await page.getByRole("button",{name:"Update case"}).click();
+const firstFunded=saved.funded_at;
+await dialog.getByLabel("Next action",{exact:true}).fill("QA follow-up");
+await dialog.getByRole("button",{name:"Save qualification"}).click();
+await expect(dialog).not.toBeVisible();
+if(saved.funded_at!==firstFunded)throw new Error("Funded timestamp changed on edit");
+await page.getByRole("button",{name:/Funding Radar/}).click();
+await expect(page.getByText("No financing candidates match")).toBeVisible();
+await page.getByRole("button",{name:/Follow-up Desk/}).click();
+await page.getByRole("button",{name:/All scheduled/}).click();
+await expect(page.getByText("QA follow-up",{exact:true})).toBeVisible();
+await page.getByRole("button",{name:"Add partner contact",exact:true}).click();
+await page.getByLabel("Business",{exact:true}).fill("QA existing partner contact");
+await page.getByLabel("Contact name",{exact:true}).fill("QA Existing");
+await page.getByRole("button",{name:"Add to qualification queue",exact:true}).click();
+await expect(page.getByText("QA existing partner contact",{exact:true})).toBeVisible();
+if(leadRows[1].source!=="randall_existing_contact"||Object.keys(leadRows[1].enrichment_data).length)throw new Error("Intake fabricated source signals");
+await page.setViewportSize({width:390,height:844});
+await page.screenshot({path:"artifacts/qa-mobile.png",fullPage:true});
+const width=await page.evaluate(()=>({body:document.documentElement.scrollWidth,viewport:innerWidth}));
+if(width.body>width.viewport+1)throw new Error("Mobile overflow "+JSON.stringify(width));
+if(errors.length)throw new Error("Browser errors: "+errors.join("; "));
+console.log(JSON.stringify({passed:true,checks:["incomplete cases blocked","save and reopen","local follow-up roundtrip","funding evidence required","requested vs funded amounts","milestones stable","funded removed from radar","mobile no overflow","partner follow-up desk","existing partner intake without invented signals"],externalWrites:0}));
+await browser.close();

@@ -1,0 +1,333 @@
+@import "tailwindcss" source(none);
+@source "../src";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * Design system — "terminal de inteligencia comercial".
+ * Dark navy surfaces + gold accent, cold gray scale, dense financial-table feel.
+ *
+ * Surfaces:  --surface-0 (fondo) → --surface-1 (card) → --surface-2 (card elevado)
+ *            → --surface-3 (hover / header de tabla)
+ * Semánticos: --tier-sp / --tier-s / --tier-a / --tier-b
+ *             --risk-ok / --risk-warn / --risk-critical
+ * All colors MUST use oklch.
+ */
+
+@theme inline {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace;
+
+  /* Micro-transiciones: 150ms en toda la consola */
+  --default-transition-duration: 150ms;
+  --default-transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+
+
+  --radius-sm: calc(var(--radius) - 2px);
+  --radius-md: var(--radius);
+  --radius-lg: calc(var(--radius) + 2px);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 12px);
+  --radius-4xl: calc(var(--radius) + 16px);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-surface-0: var(--surface-0);
+  --color-surface-1: var(--surface-1);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-ring-offset-background: var(--background);
+
+  /* Tiers */
+  --color-tier-sp: var(--tier-sp);
+  --color-tier-sp-foreground: var(--tier-sp-foreground);
+  --color-tier-s: var(--tier-s);
+  --color-tier-s-foreground: var(--tier-s-foreground);
+  --color-tier-a: var(--tier-a);
+  --color-tier-a-foreground: var(--tier-a-foreground);
+  --color-tier-b: var(--tier-b);
+  --color-tier-b-foreground: var(--tier-b-foreground);
+
+  /* Riesgo */
+  --color-risk-ok: var(--risk-ok);
+  --color-risk-ok-foreground: var(--risk-ok-foreground);
+  --color-risk-warn: var(--risk-warn);
+  --color-risk-warn-foreground: var(--risk-warn-foreground);
+  --color-risk-critical: var(--risk-critical);
+  --color-risk-critical-foreground: var(--risk-critical-foreground);
+
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  --shadow-xs: 0 1px 0 0 oklch(0 0 0 / 25%);
+  --shadow-sm: 0 1px 2px 0 oklch(0 0 0 / 30%);
+  --shadow-md: 0 2px 6px -2px oklch(0 0 0 / 35%);
+  --shadow-lg: 0 8px 24px -12px oklch(0 0 0 / 55%);
+}
+
+:root {
+  --radius: 0.5rem;
+
+  /* ALKAN Intelligence — warm editorial workspace + dark navy navigation */
+  --surface-0: #F5F1EA;
+  --surface-1: #FDFCF9;
+  --surface-2: #F0EDE5;
+  --surface-3: #E8E2D8;
+
+  --background: var(--surface-0);
+  --foreground: #0A1024;
+  --card: var(--surface-1);
+  --card-foreground: var(--foreground);
+  --popover: #FFFFFF;
+  --popover-foreground: var(--foreground);
+
+  /* Gold = priority / intelligence. Blue = action / trust. */
+  --primary: #C89A3A;
+  --primary-foreground: #0A1024;
+  --secondary: #E8F1FB;
+  --secondary-foreground: #17345B;
+  --muted: var(--surface-2);
+  --muted-foreground: #6C6A65;
+  --accent: #E8F1FB;
+  --accent-foreground: #17345B;
+  --destructive: #A0281E;
+  --destructive-foreground: #FFFFFF;
+
+  --border: #E2DDD4;
+  --border-strong: #C8C2B5;
+  --input: #D8D2C7;
+  --ring: #2A4F82;
+
+  /* Tiers / information hierarchy */
+  --tier-sp: #C89A3A;
+  --tier-sp-foreground: #0A1024;
+  --tier-s: #2E7D5A;
+  --tier-s-foreground: #FFFFFF;
+  --tier-a: #2A4F82;
+  --tier-a-foreground: #FFFFFF;
+  --tier-b: #6C6A65;
+  --tier-b-foreground: #FFFFFF;
+
+  /* Risk */
+  --risk-ok: #2E7D5A;
+  --risk-ok-foreground: #FFFFFF;
+  --risk-warn: #9A6200;
+  --risk-warn-foreground: #FFFFFF;
+  --risk-critical: #A0281E;
+  --risk-critical-foreground: #FFFFFF;
+
+  --chart-1: #C89A3A;
+  --chart-2: #2E7D5A;
+  --chart-3: #2A4F82;
+  --chart-4: #4F7DFF;
+  --chart-5: #6C6A65;
+
+  --sidebar: #0A1024;
+  --sidebar-foreground: #F7F3EA;
+  --sidebar-primary: #C89A3A;
+  --sidebar-primary-foreground: #0A1024;
+  --sidebar-accent: #16213B;
+  --sidebar-accent-foreground: #F7F3EA;
+  --sidebar-border: rgba(255,255,255,0.08);
+  --sidebar-ring: #C89A3A;
+
+  --alkan-blue: #2A4F82;
+  --alkan-blue-bright: #4F7DFF;
+  --alkan-gold: #C89A3A;
+  --alkan-green: #2E7D5A;
+  --alkan-ink: #0A1024;
+  --alkan-cream: #F5F1EA;
+}
+
+.dark {
+  --surface-0: #0A1024;
+  --surface-1: #111A31;
+  --surface-2: #17223C;
+  --surface-3: #202D49;
+  --background: var(--surface-0);
+  --foreground: #F7F3EA;
+  --card: var(--surface-1);
+  --card-foreground: var(--foreground);
+  --popover: var(--surface-2);
+  --popover-foreground: var(--foreground);
+  --muted: var(--surface-2);
+  --muted-foreground: #B8B5AE;
+  --accent: var(--surface-3);
+  --accent-foreground: #F7F3EA;
+  --border: rgba(255,255,255,0.10);
+  --border-strong: rgba(255,255,255,0.18);
+  --input: rgba(255,255,255,0.14);
+  --ring: #C89A3A;
+}
+
+/* Cifras tabulares para TODO número, métrica y celda de tabla */
+@utility tnum {
+  font-variant-numeric: tabular-nums lining-nums;
+  font-feature-settings: "tnum" 1, "lnum" 1;
+}
+
+@utility metric {
+  font-variant-numeric: tabular-nums lining-nums;
+  font-feature-settings: "tnum" 1, "lnum" 1;
+  letter-spacing: -0.01em;
+  font-weight: 600;
+}
+
+@utility focus-ring {
+  &:focus-visible {
+    outline: none;
+    box-shadow:
+      0 0 0 2px var(--background),
+      0 0 0 4px var(--ring);
+  }
+}
+
+
+@utility font-display {
+  font-family: "Cormorant Garamond", Georgia, serif;
+}
+
+@utility intelligence-eyebrow {
+  font-family: "DM Mono", ui-monospace, monospace;
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  font-weight: 600;
+}
+
+@utility editorial-number {
+  font-family: "Cormorant Garamond", Georgia, serif;
+  font-variant-numeric: tabular-nums lining-nums;
+  font-feature-settings: "tnum" 1, "lnum" 1;
+  letter-spacing: -0.02em;
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+
+  html {
+    font-family: var(--font-sans);
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    font-feature-settings: "cv02" 1, "cv03" 1, "cv04" 1;
+  }
+
+  /* Densidad tipo terminal: números siempre alineados */
+  table,
+  th,
+  td,
+  time,
+  output,
+  input,
+  select,
+  textarea,
+  button,
+  dd,
+  kbd,
+  code,
+  pre,
+  .font-mono,
+  [data-slot="badge"],
+  [data-numeric],
+  .tabular {
+    font-variant-numeric: tabular-nums lining-nums;
+    font-feature-settings: "tnum" 1, "lnum" 1;
+  }
+
+  /* Anillo de foco accesible para todo elemento interactivo */
+  a,
+  button,
+  input,
+  select,
+  textarea,
+  summary,
+  [role="button"],
+  [role="tab"],
+  [role="option"],
+  [role="menuitem"],
+  [role="switch"],
+  [role="checkbox"],
+  [tabindex]:not([tabindex="-1"]) {
+    &:focus-visible {
+      outline: 2px solid var(--ring);
+      outline-offset: 2px;
+      border-radius: var(--radius-sm);
+    }
+  }
+
+  /* Micro-transiciones consistentes en superficies interactivas */
+  a,
+  button,
+  summary,
+  [role="button"],
+  [role="tab"],
+  [data-slot="badge"] {
+    transition-property: color, background-color, border-color, box-shadow, opacity, transform;
+    transition-duration: 150ms;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  tr,
+  [data-state] {
+    transition-duration: 150ms;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      transition-duration: 0.01ms !important;
+      animation-duration: 0.01ms !important;
+    }
+  }
+
+  ::selection {
+    background: color-mix(in oklab, var(--primary) 35%, transparent);
+  }
+
+  /* Scrollbars discretos, acordes al tema */
+  * {
+    scrollbar-color: var(--border-strong) transparent;
+    scrollbar-width: thin;
+  }
+}
+

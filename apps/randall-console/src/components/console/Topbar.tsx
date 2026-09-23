@@ -20,6 +20,7 @@ export function Topbar() {
         qc.invalidateQueries({ queryKey: ["leads"] }),
         qc.invalidateQueries({ queryKey: ["private-market"] }),
         qc.invalidateQueries({ queryKey: ["financing-cases"] }),
+        ...["origination-candidates","partner-box","partner-feedback","feedback-cases"].map(key=>qc.invalidateQueries({queryKey:[key]})),
       ]);
       setLastUpdated(new Date());
     } finally {

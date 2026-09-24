@@ -1,7 +1,7 @@
 import { createClient } from "npm:@supabase/supabase-js@2.112.0";
 import { normalize, obj, type Kind } from "./normalize.ts";
 
-const origins = new Set(["https://randall-console.vercel.app","http://127.0.0.1:5187","http://localhost:5187"]);
+const origins = new Set(["https://randall-console.vercel.app","https://randall-console-git-featu-7f1fe1-multiandresdark-6906s-projects.vercel.app","http://127.0.0.1:5187","http://localhost:5187"]);
 class ApiError extends Error { status:number; constructor(status:number,message:string){super(message);this.status=status;} }
 
 const cleanText=(v:unknown,max=300)=>{
@@ -125,7 +125,7 @@ export async function handle(req:Request){
   const limit=25;
   const page=await api("/datasets/"+datasetId+"/items?format=json&clean=false&offset="+offset+"&limit="+limit);
   if(!Array.isArray(page.body))throw new ApiError(502,"Dataset returned an unexpected format.");
-  const items=page.body.map((item:unknown,i:number)=>normalize(binding.kind as Kind,item,run as any,offset+i));
+  const items=page.body.map((item:unknown,i:number)=>{const row=obj(item);const kind:Kind=binding.kind==="wa_enrichment"&&!row.identity&&row.status==="ok"&&(row.permit_number||row.lead_payload)?"accela":binding.kind as Kind;return normalize(kind,item,run as any,offset+i);});
   const next=page.body.length<limit?null:offset+page.body.length;
   const common={run:runSummary(run),kind:binding.kind,offset,next_offset:next,total_items:page.total,page_items:items.length};
 

@@ -238,7 +238,9 @@ export function ApifyConnections() {
       </div>
 
       {selected?.kind === "wa_enrichment" && (
-        <section className="space-y-4 rounded-lg border border-primary/30 bg-primary/[0.03] p-5">
+        <section className="overflow-hidden rounded-xl border border-primary/25 bg-surface-1 shadow-sm">
+          <div className="h-0.5 bg-gradient-to-r from-primary to-transparent" />
+          <div className="space-y-4 p-5">
           <div>
             <p className="text-xs uppercase tracking-[.18em] text-primary">Run actor</p>
             <h2 className="mt-2 font-semibold">Washington Public Records Enrichment</h2>
@@ -265,6 +267,11 @@ export function ApifyConnections() {
                   : "Starting · " + activeRunId}
               </span>
             )}
+          </div>
+          <div className="rounded-md border border-primary/20 bg-primary/[0.04] p-3 text-xs leading-5 text-muted-foreground">
+            Public records can establish identity, licensing, compliance and observed activity. They do not establish revenue,
+            deposits, debt, NSF history, desired amount or financing need.
+          </div>
           </div>
         </section>
       )}

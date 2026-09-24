@@ -35,9 +35,10 @@ type NavItem = {
 
 const PARTNER_NAV: NavItem[] = [
   {id:"dashboard",label:"Dashboard",detail:"Today · batch · actions",code:"01",icon:BarChart3},
-  {id:"funding_radar",label:"Funding Radar",detail:"Research candidates · evidence",code:"02",icon:WalletCards},
-  {id:"qualification",label:"Qualification",detail:"Confirmed facts · next action",code:"03",icon:ClipboardCheck},
-  {id:"deal_pipeline",label:"Pipeline",detail:"Contacted · submitted · funded",code:"04",icon:Workflow},
+  {id:"apify",label:"Permit Opportunities",detail:"Run enrichment · review evidence",code:"02",icon:Sparkles},
+  {id:"funding_radar",label:"Funding Radar",detail:"Research candidates · evidence",code:"03",icon:WalletCards},
+  {id:"qualification",label:"Qualification",detail:"Confirmed facts · next action",code:"04",icon:ClipboardCheck},
+  {id:"deal_pipeline",label:"Pipeline",detail:"Contacted · submitted · funded",code:"05",icon:Workflow},
 ];
 
 export function AppSidebar() {

@@ -1,6 +1,7 @@
 import { createContext, useContext, useMemo, useState, type ReactNode } from "react";
 
 export type ConsoleSection =
+  | "dashboard"
   | "apify"
   | "follow_up"
   | "funding_radar"
@@ -23,7 +24,7 @@ type ConsoleContextValue = {
 const ConsoleContext = createContext<ConsoleContextValue | null>(null);
 
 export function ConsoleProvider({ children }: { children: ReactNode }) {
-  const [section, setSection] = useState<ConsoleSection>("funding_radar");
+  const [section, setSection] = useState<ConsoleSection>("dashboard");
   const [search, setSearch] = useState("");
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
@@ -42,6 +43,7 @@ export function useConsole() {
 }
 
 export const SECTION_META: Record<ConsoleSection, { title: string; subtitle: string }> = {
+  dashboard: {title:"Dashboard",subtitle:"Today's funding intelligence, review queue and partner actions."},
   apify: {title:"Actor Connections",subtitle:"Apify runs, source evidence and import history."},
   follow_up: {title:"Follow-up Desk",subtitle:"Existing partner contacts, callbacks and relationship continuity."},
   funding_radar: {

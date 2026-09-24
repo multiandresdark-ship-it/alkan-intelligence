@@ -18,6 +18,7 @@ const QualificationQueuePanel = React.lazy(() => import("@/components/console/Fi
 const DealPipelinePanel = React.lazy(() => import("@/components/console/FinancingWorkspace").then(m => ({default:m.DealPipelinePanel})));
 const PortfolioPanel = React.lazy(() => import("@/components/console/FinancingWorkspace").then(m => ({default:m.PortfolioPanel})));
 import { SectionErrorBoundary } from "@/components/console/SectionErrorBoundary";
+import { RandallDashboard, RandallPilotFundingRadar } from "@/components/console/RandallPilot25";
 import { ErrorBanner, EmptyState } from "@/components/console/states";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -76,12 +77,13 @@ function Workspace(){
  const leads=useQuery({queryKey:["leads"],queryFn:getLeads,enabled:Boolean(client.data)});
  useEffect(()=>{if(leads.dataUpdatedAt)setLastUpdated(new Date(leads.dataUpdatedAt));},[leads.dataUpdatedAt,setLastUpdated]);
  function openEvidence(id:string){setSection("business_intelligence");setSelected(id);}
- return <SidebarProvider><div className="flex min-h-screen w-full"><AppSidebar/><SidebarInset className="min-w-0 bg-background"><Topbar/><main className="min-w-0 p-4 md:p-7"><div className="mb-4 sm:hidden"><Input aria-label="Search workspace" placeholder="Search businesses…" value={search} onChange={e=>setSearch(e.target.value)}/></div>{client.data && <div className="mb-5 flex justify-end"><PartnerIntake/></div>}<SectionErrorBoundary key={section}>
+ return <SidebarProvider><div className="flex min-h-screen w-full"><AppSidebar/><SidebarInset className="min-w-0 bg-background"><Topbar/><main className="min-w-0 p-4 md:p-7"><div className="mb-4 sm:hidden"><Input aria-label="Search workspace" placeholder="Search businesses…" value={search} onChange={e=>setSearch(e.target.value)}/></div><SectionErrorBoundary key={section}>
  {client.isPending?<p role="status">Checking workspace access…</p>:client.isError?<ErrorBanner error={client.error} onRetry={()=>void client.refetch()}/>:!client.data?<EmptyState icon={ShieldCheck} title="Workspace access is not assigned" description="Your account is signed in, but an ALKAN administrator must assign your client workspace before records are available."/>:<>
  {leads.isError&&section!=="funding_radar"&&<ErrorBanner error={leads.error} onRetry={()=>void leads.refetch()}/>}
+ {section==="dashboard"&&<RandallDashboard/>}
  {section==="apify"&&<ApifyConnections/>}
  {section==="follow_up"&&<FollowUpDesk/>}
- {section==="funding_radar"&&<div className="space-y-6"><OriginationPanel onOpenProfile={openEvidence}/><details><summary className="cursor-pointer text-sm text-muted-foreground">Previous financing signals</summary><FundingRadarPanel leads={leads.data??[]} isLoading={leads.isPending} isError={leads.isError} error={leads.error} onRetry={()=>void leads.refetch()} onOpenProfile={openEvidence}/></details></div>}
+ {section==="funding_radar"&&<div className="space-y-6"><RandallPilotFundingRadar/><details className="rounded-lg border border-border bg-surface-1 p-4"><summary className="cursor-pointer text-sm font-medium">Live engine queue & evaluation</summary><div className="mt-5"><OriginationPanel onOpenProfile={openEvidence}/></div></details><details className="rounded-lg border border-border bg-surface-1 p-4"><summary className="cursor-pointer text-sm text-muted-foreground">Legacy financing signals</summary><div className="mt-5"><FundingRadarPanel leads={leads.data??[]} isLoading={leads.isPending} isError={leads.isError} error={leads.error} onRetry={()=>void leads.refetch()} onOpenProfile={openEvidence}/></div></details></div>}
  {section==="qualification"&&(leads.isPending?<p role="status">Loading qualification queue…</p>:<QualificationQueuePanel leads={leads.data??[]}/>)}
  {section==="deal_pipeline"&&<DealPipelinePanel/>}{section==="portfolio"&&<PortfolioPanel/>}
  {["business_intelligence","project_intelligence"].includes(section)&&<Evidence leads={leads.data??[]} selected={selected} onSelect={setSelected}/>}

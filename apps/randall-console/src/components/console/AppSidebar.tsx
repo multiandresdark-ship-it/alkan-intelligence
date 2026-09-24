@@ -2,15 +2,11 @@ import { useEffect, useState } from "react";
 
 import {
   BarChart3,
-  Radar,
-  Building2,
   LogOut,
-  Landmark,
   Sparkles,
   WalletCards,
   ClipboardCheck,
   Workflow,
-  History,
 } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
@@ -38,60 +34,10 @@ type NavItem = {
 };
 
 const PARTNER_NAV: NavItem[] = [
-  {id:"follow_up",label:"Follow-up Desk",detail:"Existing clients · callbacks",code:"00",icon:ClipboardCheck},
-  {
-    id: "funding_radar",
-    label: "Funding Radar",
-    detail: "Who to qualify · why now",
-    code: "01",
-    icon: WalletCards,
-  },
-  {
-    id: "qualification",
-    label: "Qualification Queue",
-    detail: "Calls · gaps · follow-up",
-    code: "02",
-    icon: ClipboardCheck,
-  },
-  {
-    id: "business_intelligence",
-    label: "Business Intelligence",
-    detail: "Company · activity · evidence",
-    code: "03",
-    icon: Building2,
-  },
-  {
-    id: "deal_pipeline",
-    label: "Deal Pipeline",
-    detail: "Qualified · submitted · funded",
-    code: "04",
-    icon: Workflow,
-  },
-  {
-    id: "portfolio",
-    label: "Portfolio",
-    detail: "Funded · repeat opportunity",
-    code: "05",
-    icon: History,
-  },
-];
-
-const ADVANCED_NAV: NavItem[] = [
-  {id:"apify",label:"Actor Connections",detail:"Apify · review · import",code:"A0",icon:Workflow},
-  {
-    id: "project_intelligence",
-    label: "Project / Owner Evidence",
-    detail: "Projects · owners · timing",
-    code: "A1",
-    icon: Landmark,
-  },
-  {
-    id: "market_analytics",
-    label: "Market Analytics",
-    detail: "Scoring · source intelligence",
-    code: "A2",
-    icon: Radar,
-  },
+  {id:"dashboard",label:"Dashboard",detail:"Today · batch · actions",code:"01",icon:BarChart3},
+  {id:"funding_radar",label:"Funding Radar",detail:"Research candidates · evidence",code:"02",icon:WalletCards},
+  {id:"qualification",label:"Qualification",detail:"Confirmed facts · next action",code:"03",icon:ClipboardCheck},
+  {id:"deal_pipeline",label:"Pipeline",detail:"Contacted · submitted · funded",code:"04",icon:Workflow},
 ];
 
 export function AppSidebar() {
@@ -186,17 +132,6 @@ export function AppSidebar() {
           )}
           <SidebarGroupContent>
             <SidebarMenu className="gap-0.5">{renderItems(PARTNER_NAV)}</SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        <SidebarGroup className="pt-2">
-          {!collapsed && (
-            <SidebarGroupLabel className="px-3 text-[0.56rem] uppercase tracking-[0.18em] text-sidebar-foreground/35">
-              Evidence / advanced
-            </SidebarGroupLabel>
-          )}
-          <SidebarGroupContent>
-            <SidebarMenu className="gap-0.5">{renderItems(ADVANCED_NAV)}</SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
 

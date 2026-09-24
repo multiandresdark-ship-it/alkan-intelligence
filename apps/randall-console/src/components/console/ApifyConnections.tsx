@@ -275,7 +275,7 @@ export function ApifyConnections() {
             <h2 className="font-semibold">{selected.label}</h2>
             <a
               className="text-sm text-primary underline"
-              href={"https://console.apify.com/actors/" + actorId}
+              href={"https://console.apify.com/actors/" + actorId.replace("~", "/")}
               target="_blank"
               rel="noopener noreferrer"
             >

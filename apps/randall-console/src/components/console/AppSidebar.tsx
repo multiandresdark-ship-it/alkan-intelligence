@@ -113,11 +113,11 @@ export function AppSidebar() {
               <p className="truncate text-[0.58rem] font-medium uppercase tracking-[0.24em] text-sidebar-primary">
                 ALKAN
               </p>
-              <p className="mt-0.5 truncate font-display text-[1.23rem] font-semibold leading-none text-sidebar-foreground">
-                Financing Intelligence
+              <p className="mt-0.5 truncate font-display text-[1.3rem] font-semibold leading-none text-sidebar-foreground">
+                Intelligence
               </p>
               <p className="mt-1 truncate text-[0.55rem] uppercase tracking-[0.14em] text-sidebar-foreground/45">
-                Partner opportunity console
+                Randall financing desk
               </p>
             </div>
           )}
@@ -141,11 +141,11 @@ export function AppSidebar() {
             <div className="flex items-center gap-2 text-sidebar-primary">
               <Sparkles className="h-3.5 w-3.5" />
               <span className="text-[0.58rem] font-semibold uppercase tracking-[0.14em]">
-                Partner view
+                Decision layer
               </span>
             </div>
             <p className="mt-2 text-[0.64rem] leading-5 text-sidebar-foreground/50">
-              ALKAN finds and qualifies the opportunity. Funding decisions remain with the financing partner.
+              Signal → business → evidence → qualification → financing outcome.
             </p>
           </div>
         )}

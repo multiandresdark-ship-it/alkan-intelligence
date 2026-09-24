@@ -174,8 +174,8 @@ export function ApifyConnections() {
   return (
     <div className="space-y-6">
       <header className="rounded-xl border border-border bg-surface-1 p-6">
-        <p className="text-xs uppercase tracking-[.2em] text-primary">Source operations</p>
-        <h1 className="mt-3 font-display text-4xl">Connect the work already done.</h1>
+        <p className="text-xs uppercase tracking-[.2em] text-primary">Permit opportunities</p>
+        <h1 className="mt-3 font-display text-4xl">Run the Washington enrichment engine.</h1>
         <p className="mt-3 max-w-3xl text-sm leading-6 text-muted-foreground">
           Start the Washington public-record enrichment actor, review completed Apify runs and
           bring their evidence into this workspace. Public records do not establish borrower need.
@@ -183,7 +183,7 @@ export function ApifyConnections() {
       </header>
 
       <div className="flex items-center justify-between gap-3">
-        <h2 className="font-semibold">Connected actors</h2>
+        <h2 className="font-semibold">Connected public-record engines</h2>
         <Button
           variant="outline"
           disabled={busy}

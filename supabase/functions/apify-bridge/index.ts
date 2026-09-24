@@ -79,11 +79,12 @@ export async function handle(req:Request){
    return {body:responseText?JSON.parse(responseText):{},total:Number(response.headers.get("x-apify-pagination-total")??0)};
   };
 
-  const id=(v:unknown)=>{if(typeof v!=="string"||!/^[A-Za-z0-9]{10,40}$/.test(v))throw new ApiError(400,"Invalid actor/run ID.");return v;};
+  const actorRef=(v:unknown)=>{if(typeof v!=="string"||!/^[A-Za-z0-9_~-]{3,100}$/.test(v))throw new ApiError(400,"Invalid actor reference.");return v;};
+  const resourceId=(v:unknown)=>{if(typeof v!=="string"||!/^[A-Za-z0-9]{10,40}$/.test(v))throw new ApiError(400,"Invalid run/dataset ID.");return v;};
   const runSummary=(run:any)=>({id:run.id,actor_id:run.actId,status:run.status,started_at:run.startedAt,finished_at:run.finishedAt,dataset_id:run.defaultDatasetId});
 
   if(input.action==="start"){
-   const actorId=id(input.actor_id);
+   const actorId=actorRef(input.actor_id);
    const binding=actors.find(a=>a.actor_id===actorId);
    if(!binding)throw new ApiError(403,"Actor is not assigned to your workspace.");
    if(binding.kind!=="wa_enrichment")throw new ApiError(400,"Only the Washington enrichment actor can be started from this partner console.");
@@ -108,18 +109,24 @@ export async function handle(req:Request){
   }
 
   if(input.action==="runs"){
-   const actorId=id(input.actor_id);if(!actors.some(a=>a.actor_id===actorId))throw new ApiError(403,"Actor is not assigned to your workspace.");
+   const actorId=actorRef(input.actor_id);if(!actors.some(a=>a.actor_id===actorId))throw new ApiError(403,"Actor is not assigned to your workspace.");
    const result=await api("/acts/"+actorId+"/runs?desc=true&limit=30");
    return reply({runs:(result.body.data?.items??[]).map(runSummary)});
   }
 
   if(!["preview","import"].includes(input.action))throw new ApiError(400,"Unknown action.");
-  const runId=id(input.run_id);
+  const runId=resourceId(input.run_id);
   const run=obj((await api("/actor-runs/"+runId)).body.data);
-  const binding=actors.find(a=>a.actor_id===run.actId);
+  let binding=actors.find(a=>a.actor_id===run.actId);
+  if(!binding){
+   for(const candidate of actors.filter(a=>a.kind==="wa_enrichment")){
+    const recent=await api("/acts/"+encodeURIComponent(candidate.actor_id)+"/runs?desc=true&limit=100");
+    if((recent.body.data?.items??[]).some((r:any)=>r.id===runId)){binding=candidate;break;}
+   }
+  }
   if(!binding)throw new ApiError(403,"This run's actor is not assigned to your workspace.");
   if(run.status!=="SUCCEEDED")throw new ApiError(409,"Only successful, completed runs can be imported.");
-  const datasetId=id(run.defaultDatasetId);
+  const datasetId=resourceId(run.defaultDatasetId);
   const offset=input.offset??0;
   if(!Number.isInteger(offset)||offset<0||offset>1000000)throw new ApiError(400,"Invalid dataset offset.");
   const limit=25;
@@ -145,7 +152,7 @@ export async function handle(req:Request){
   const counts:Record<string,number>={inserted:0,updated:0,already_imported:0,unmatched:0,stale:0,ambiguous:0,skipped:0};
   for(let i=0;i<items.length;i++){
    const item:any=items[i];if(item.skip){counts.skipped++;continue;}
-   const result=await admin.rpc("ingest_apify_record",{p_client_id:clientId,p_actor_id:run.actId,p_run_id:runId,p_item_index:offset+i,p_observed_at:item.observed_at,p_record:item.record});
+   const result=await admin.rpc("ingest_apify_record",{p_client_id:clientId,p_actor_id:binding.actor_id,p_run_id:runId,p_item_index:offset+i,p_observed_at:item.observed_at,p_record:item.record});
    if(result.error)throw new ApiError(503,"Import stopped at item "+(offset+i)+". Retry this page safely; imported items will not be duplicated.");
    const status=result.data?.result;counts[status]=(counts[status]??0)+1;
   }
